@@ -87,7 +87,9 @@ class DimOverlayWindow: NSWindow {
 
 class PopoverState: ObservableObject {
     @Published var hardwareBrightness: Double = 100
-    @Published var overlayBrightness: Double = 100  // 100 = bright (no dim), 0 = darkest (max dim)
+    @Published var overlayBrightness: Double = 100
+    @Published var displayName: String = "Display"
+    @Published var isInternal: Bool = false
     
     var displayController: DisplayBrightnessController?
     var onOverlayChanged: ((Float) -> Void)?
@@ -98,10 +100,17 @@ class PopoverState: ObservableObject {
     }
     
     func syncFromSystem() {
+        // Sync brightness
         guard let controller = displayController, controller.isAvailable else { return }
         let current = controller.getBrightness()
         if current >= 0 {
             hardwareBrightness = max(1, Double(current * 100))
+        }
+        
+        // Sync display name
+        if let mainScreen = NSScreen.main {
+            displayName = mainScreen.localizedName
+            isInternal = controller.builtInDisplayID != nil
         }
     }
     
@@ -112,7 +121,6 @@ class PopoverState: ObservableObject {
     }
     
     func applyOverlayDim() {
-        // Original logic: 100 = no dim, 0 = max dim
         let dimLevel = Float((100 - overlayBrightness) / 100.0)
         onOverlayChanged?(dimLevel)
     }
@@ -128,6 +136,22 @@ struct PopoverView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
+            
+            // === Display Name Header ===
+            HStack(spacing: 6) {
+                Image(systemName: state.isInternal ? "laptopcomputer" : "display")
+                    .foregroundColor(.secondary)
+                    .font(.caption)
+                Text(state.isInternal ? "Internal" : "External")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Text("•")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Text(state.displayName)
+                    .font(.caption)
+                    .foregroundColor(.primary)
+            }
             
             // === Hardware Brightness ===
             VStack(alignment: .leading, spacing: 4) {
@@ -261,7 +285,7 @@ class DimmerApp: NSObject, NSApplicationDelegate {
     private func startBrightnessMonitoring() {
         Timer.scheduledTimer(withTimeInterval: 0.15, repeats: true) { [weak self] _ in
             guard let self = self,
-                self.displayController.isAvailable else { return }
+                  self.displayController.isAvailable else { return }
             
             let current = self.displayController.getBrightness()
             guard current >= 0 else { return }

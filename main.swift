@@ -259,12 +259,19 @@ class DimmerApp: NSObject, NSApplicationDelegate {
     }
     
     private func startBrightnessMonitoring() {
-        Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            guard let self = self else { return }
+        Timer.scheduledTimer(withTimeInterval: 0.15, repeats: true) { [weak self] _ in
+            guard let self = self,
+                self.displayController.isAvailable else { return }
             
-            if self.displayController.isAvailable && !self.popover.isShown {
-                DispatchQueue.main.async {
-                    self.popoverState.syncFromSystem()
+            let current = self.displayController.getBrightness()
+            guard current >= 0 else { return }
+            
+            let systemValue = max(1, Double(current * 100))
+            
+            DispatchQueue.main.async {
+                // Only update if significantly different (avoids fighting with slider)
+                if abs(self.popoverState.hardwareBrightness - systemValue) > 1 {
+                    self.popoverState.hardwareBrightness = systemValue
                 }
             }
         }

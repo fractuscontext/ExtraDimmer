@@ -1,0 +1,129 @@
+git diff > demo-recording.patch
+
+diff --git a/Sources/main.swift b/Sources/main.swift
+index 72894d7..d285c74 100644
+--- a/Sources/main.swift
++++ b/Sources/main.swift
+@@ -195,6 +195,41 @@ final class DisplayBrightnessController {
+     }
+ }
+ 
++// MARK: - Demo Recording Overlay (recording aid only — compiled out of release builds)
++
++#if DEMO_RECORDING
++@MainActor
++final class DemoOverlayWindow {
++    private var window: NSWindow?
++
++    init() {
++        guard let screen = NSScreen.main else { return }
++
++        let window = NSWindow(
++            contentRect: screen.frame,
++            styleMask: [.borderless],
++            backing: .buffered,
++            defer: false,
++            screen: screen
++        )
++        window.isOpaque = false
++        window.backgroundColor = .black
++        window.ignoresMouseEvents = true           // clicks pass straight through
++        window.level = .normal                     // below the popover, above the desktop
++        window.collectionBehavior = [.canJoinAllSpaces, .stationary, .ignoresCycle]
++        window.isReleasedWhenClosed = false
++        window.alphaValue = 0
++        window.orderFrontRegardless()
++
++        self.window = window
++    }
++
++    /// pct: 0 = fully bright, 1 = fully black
++    func setDim(_ pct: Float) {
++        window?.alphaValue = CGFloat(max(0, min(1, pct)))
++    }
++}
++#endif
+ // MARK: - App State
+ 
+ @MainActor
+@@ -207,6 +242,20 @@ final class PopoverState: ObservableObject {
+     var displayController: DisplayBrightnessController?
+     var onOverlayChanged: ((Float) -> Void)?
+     var onQuit: (() -> Void)?
++    #if DEMO_RECORDING
++    var onDemoDimChanged: ((Float) -> Void)?
++
++    /// 0 = fully bright, 1 = fully black. Cosmetic curve for the recording
++    /// overlay only — just needs to look convincing on camera.
++    var demoDimLevel: Float {
++        if hardwareBrightness > 1 {
++            return Float(1.0 - hardwareBrightness / 100.0) * 0.85
++        } else {
++            let x = Float((100.0 - overlayBrightness) / 100.0)
++            return 0.85 + 0.15 * x   // stacks on top of hardware-minimum darkness
++        }
++    }
++    #endif
+ 
+     var showOverlaySlider: Bool {
+         hardwareBrightness <= 1 || !(displayController?.isAvailable ?? false)
+@@ -288,6 +337,9 @@ struct PopoverView: View {
+                             if state.hardwareBrightness > 1 && state.overlayBrightness < 100 {
+                                 state.resetOverlay()
+                             }
++                            #if DEMO_RECORDING
++                            state.onDemoDimChanged?(state.demoDimLevel)
++                            #endif
+                         }
+                 }
+             }
+@@ -306,6 +358,9 @@ struct PopoverView: View {
+                         Slider(value: $state.overlayBrightness, in: 0...100)
+                             .onChange(of: state.overlayBrightness) { _, _ in
+                                 state.applyOverlayDim()
++                                #if DEMO_RECORDING
++                                state.onDemoDimChanged?(state.demoDimLevel)
++                                #endif
+                             }
+                     }
+                 }
+@@ -335,6 +390,9 @@ final class DimmerApp: NSObject, NSApplicationDelegate {
+     private var popoverState: PopoverState?
+     private var brightnessTimer: Timer?
+     private var splashController: SplashWindowController?
++    #if DEMO_RECORDING
++    private var demoOverlay: DemoOverlayWindow?
++    #endif
+ 
+     func applicationDidFinishLaunching(_ notification: Notification) {
+         Logger.general.info("Application did finish launching")
+@@ -351,6 +409,10 @@ final class DimmerApp: NSObject, NSApplicationDelegate {
+         setupPopover()
+         startBrightnessMonitoring()
+ 
++        #if DEMO_RECORDING
++        demoOverlay = DemoOverlayWindow()
++        #endif
++
+         NotificationCenter.default.addObserver(
+             self,
+             selector: #selector(screensChanged),
+@@ -380,6 +442,11 @@ final class DimmerApp: NSObject, NSApplicationDelegate {
+         state.onQuit = { [weak self] in
+             self?.quitApp()
+         }
++        #if DEMO_RECORDING
++        state.onDemoDimChanged = { [weak self] level in
++            self?.demoOverlay?.setDim(level)
++        }
++        #endif
+         state.syncFromSystem()
+         popoverState = state
+     }
+@@ -487,4 +554,4 @@ private func launchApp() {
+ 
+ MainActor.assumeIsolated {
+     launchApp()
+-}
+\ No newline at end of file
++}

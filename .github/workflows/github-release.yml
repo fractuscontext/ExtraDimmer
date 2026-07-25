@@ -1,0 +1,49 @@
+name: Compile and Publish on GitHub Release
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: [".github/workflows/**", "README.md"]
+  pull_request:
+    branches: [main]
+    paths-ignore: [".github/workflows/**", "README.md"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          lfs: true
+
+      - name: Install Nix
+        uses: nixbuild/nix-quick-install-action@v34
+
+      - name: Magic Nix Cache
+        uses: DeterminateSystems/magic-nix-cache-action@v14
+
+      - name: Read Nix-Calculated Version
+        id: version
+        run: |
+          # Use Nix to extract the precise date-format directly from this Git Commit's epoch
+          NEW_VERSION="$(nix run .#print-version)"
+          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Build DMG Package
+        env:
+          NEW_VERSION: ${{ steps.version.outputs.version }}
+        # Pass the formatted version in so the internal PlistBuddy and DMG_NAME catch it
+        run: nix run .#makeDmg
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ steps.version.outputs.version }}"
+          name: "v${{ steps.version.outputs.version }}"
+          files: ExtraDimmer-${{ steps.version.outputs.version }}.dmg
+          generate_release_notes: true

@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:ExtraDimmer}",
+            "name": "Debug ExtraDimmer",
+            "target": "ExtraDimmer",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug ExtraDimmer"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:ExtraDimmer}",
+            "name": "Release ExtraDimmer",
+            "target": "ExtraDimmer",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release ExtraDimmer"
+        }
+    ]
+}

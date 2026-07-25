@@ -1,0 +1,19 @@
+{
+  // Clean up trailing whitespace globally for all files on save
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+
+  // Enable formatting globally on save
+  "editor.formatOnSave": true,
+
+  // Configure Nix-specific formatting using nixfmt
+  "[nix]": {
+    "editor.defaultFormatter": "jnoortheen.nix-ide",
+    "editor.formatOnSave": true
+  },
+  
+  // Nix IDE Extension configuration to use nixfmt
+  "nix.enableLanguageServer": true,
+  "nix.serverPath": "nil", // Or "nixd" if you prefer that LSP
+  "nix.formatterPath": "nixfmt"
+}

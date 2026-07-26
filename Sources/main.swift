@@ -189,7 +189,9 @@ final class DisplayBrightnessController {
     }
 
     func setBrightness(_ value: Float) -> Bool {
-        guard let id = builtInDisplayID, let set = setBrightnessFunc else { return false }
+        guard let id: CGDirectDisplayID = builtInDisplayID, let set = setBrightnessFunc else {
+            return false
+        }
         guard value.isFinite else { return false }
 
         let clamped = max(0, min(1, value))

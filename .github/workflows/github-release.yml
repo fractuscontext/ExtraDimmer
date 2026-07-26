@@ -17,12 +17,12 @@ jobs:
     runs-on: macos-15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           lfs: true
 
       - name: Install Nix
-        uses: nixbuild/nix-quick-install-action@v34
+        uses: nixbuild/nix-quick-install-action@v35
 
       - name: Magic Nix Cache
         uses: DeterminateSystems/magic-nix-cache-action@v14
@@ -41,9 +41,9 @@ jobs:
         run: nix run .#makeDmg
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: "v${{ steps.version.outputs.version }}"
           name: "v${{ steps.version.outputs.version }}"
-          files: ExtraDimmer-${{ steps.version.outputs.version }}.dmg
+          files: ExtraDimmer-${{ steps.version.outputs.version }}-aarch64.dmg
           generate_release_notes: true

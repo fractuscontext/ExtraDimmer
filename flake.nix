@@ -2,7 +2,7 @@
   description = "ExtraDimmer - Software and hardware display dimmer";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "git+https://github.com/NixOS/nixpkgs?shallow=1&ref=nixpkgs-26.05-darwin";
   };
 
   outputs =

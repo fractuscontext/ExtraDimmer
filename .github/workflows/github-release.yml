@@ -8,6 +8,10 @@ on:
     branches: [main]
     paths-ignore: [".github/workflows/**", "README.md"]
   workflow_dispatch:
+    inputs:
+      create-release:
+        type: boolean
+        description: Publish on GitHub Release
 
 permissions:
   contents: write
@@ -20,12 +24,11 @@ jobs:
         uses: actions/checkout@v7
         with:
           lfs: true
+          persist-credentials: false
 
       - name: Install Nix
         uses: nixbuild/nix-quick-install-action@v35
-
-      - name: Magic Nix Cache
-        uses: DeterminateSystems/magic-nix-cache-action@v14
+      - uses: DeterminateSystems/magic-nix-cache-action@v14
 
       - name: Read Nix-Calculated Version
         id: version
@@ -40,7 +43,16 @@ jobs:
         # Pass the formatted version in so the internal PlistBuddy and DMG_NAME catch it
         run: nix run .#makeDmg
 
+      - name: Rename Package
+        run: mv ExtraDimmer-${{ steps.version.outputs.version }}.dmg ExtraDimmer-${{ steps.version.outputs.version }}-aarch64.dmg
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          path: ./
+
       - name: Create GitHub Release
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.create-release == true )
         uses: softprops/action-gh-release@v3
         with:
           tag_name: "v${{ steps.version.outputs.version }}"

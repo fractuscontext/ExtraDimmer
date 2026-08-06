@@ -47,7 +47,7 @@ jobs:
         run: mv ExtraDimmer-${{ steps.version.outputs.version }}.dmg ExtraDimmer-${{ steps.version.outputs.version }}-aarch64.dmg
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           path: ./
 

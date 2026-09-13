@@ -28,7 +28,7 @@ jobs:
 
       - name: Install Nix
         uses: nixbuild/nix-quick-install-action@v35
-      - uses: DeterminateSystems/magic-nix-cache-action@v14
+      - uses: DeterminateSystems/magic-nix-cache-action@v15
 
       - name: Read Nix-Calculated Version
         id: version
